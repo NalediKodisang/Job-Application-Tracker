@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Application Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Job Application Tracker</h1>
+
+    <!-- Add Application Form -->
+    <div id="applicationFormContainer" class="form-container" style="display: none;">
+        <h2>Add New Application</h2>
+        <form id="applicationForm">
+            <label for="company">Company Name:</label>
+            <input type="text" id="company" required>
+
+            <label for="jobTitle">Job Title:</label>
+            <input type="text" id="jobTitle" required>
+
+            <label for="status">Status:</label>
+            <select id="status">
+                <option value="Applied" selected>Applied</option>
+                <option value="Interview">Interview</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Offer">Offer</option>
+            </select>
+
+            <button type="submit">Add Application</button>
+            <button type="button" id="cancelBtn">Cancel</button>
+        </form>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button id="addApplicationBtn">+ Add Application</button>
+        <select id="filterStatus">
+            <option value="All" selected>All Status</option>
+            <option value="Applied">Applied</option>
+            <option value="Interview">Interview</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Offer">Offer</option>
+        </select>
+        <input type="text" id="searchInput" placeholder="Search by Company or Job Title">
+    </div>
+
+    <!-- Applications Table -->
+    <section class="applications">
+        <table>
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Job Title</th>
+                    <th>Status</th>
+                    <th>Date Applied</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="applicationsTable"></tbody>
+        </table>
+    </section>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
