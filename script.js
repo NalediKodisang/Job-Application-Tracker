@@ -498,3 +498,6 @@ applicationFormContainer.addEventListener('keydown', (e) => {
         cancelBtn.click();
     }
 });
+
+// For example, in JS or HTML
+console.log("Update test");
