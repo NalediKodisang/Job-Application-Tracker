@@ -7,46 +7,89 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
 <div class="container">
     <h1>Job Application Tracker</h1>
 
-    <!-- Add Application Form -->
-    <div id="applicationFormContainer" class="form-container" style="display: none;">
-        <h2>Add New Application</h2>
+    <!-- DASHBOARD -->
+    <section class="dashboard">
+        <div class="card">
+            <h3>Total Applications</h3>
+            <p id="totalCount">0</p>
+        </div>
+        <div class="card">
+            <h3>Interviews</h3>
+            <p id="interviewCount">0</p>
+        </div>
+        <div class="card">
+            <h3>Rejected</h3>
+            <p id="rejectedCount">0</p>
+        </div>
+        <div class="card">
+            <h3>Offers</h3>
+            <p id="offerCount">0</p>
+        </div>
+        <div class="card highlight">
+            <h3>Response Rate</h3>
+            <p id="responseRate">0%</p>
+        </div>
+        <div class="card">
+            <h3>Pending Follow-ups</h3>
+            <p id="pendingFollowups">0</p>
+        </div>
+    </section>
+
+    <!-- ADD APPLICATION FORM -->
+    <div id="applicationFormContainer" class="form-container" style="display:none;">
+        <h2 id="formTitle">Add New Application</h2>
         <form id="applicationForm">
-            <label for="company">Company Name:</label>
+            <label>Company Name</label>
             <input type="text" id="company" required>
 
-            <label for="jobTitle">Job Title:</label>
+            <label>Job Title</label>
             <input type="text" id="jobTitle" required>
 
-            <label for="status">Status:</label>
+            <label>Status</label>
             <select id="status">
-                <option value="Applied" selected>Applied</option>
+                <option value="Applied">Applied</option>
                 <option value="Interview">Interview</option>
                 <option value="Rejected">Rejected</option>
                 <option value="Offer">Offer</option>
             </select>
 
-            <button type="submit">Add Application</button>
+            <label>Follow-Up Date</label>
+            <input type="date" id="followUpDate" required>
+
+            <input type="hidden" id="editingId" value="">
+
+            <button type="submit" id="submitBtn">Add Application</button>
             <button type="button" id="cancelBtn">Cancel</button>
         </form>
     </div>
 
-    <!-- Controls -->
+    <!-- CONTROLS -->
     <div class="controls">
         <button id="addApplicationBtn">+ Add Application</button>
         <select id="filterStatus">
-            <option value="All" selected>All Status</option>
+            <option value="All">All Status</option>
             <option value="Applied">Applied</option>
             <option value="Interview">Interview</option>
             <option value="Rejected">Rejected</option>
             <option value="Offer">Offer</option>
         </select>
-        <input type="text" id="searchInput" placeholder="Search by Company or Job Title">
+        <select id="sortBy">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="company">Company A-Z</option>
+            <option value="followup">Follow-up Date</option>
+        </select>
+        <input type="text" id="searchInput" placeholder="Search by company or job">
+        <button id="exportBtn" class="secondary-btn">Export Data</button>
+        <button id="importBtn" class="secondary-btn">Import Data</button>
+        <input type="file" id="importFile" accept=".json" style="display:none">
     </div>
 
-    <!-- Applications Table -->
+    <!-- TABLE -->
     <section class="applications">
         <table>
             <thead>
@@ -55,6 +98,8 @@
                     <th>Job Title</th>
                     <th>Status</th>
                     <th>Date Applied</th>
+                    <th>Follow-Up</th>
+                    <th>Alert</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -62,6 +107,7 @@
         </table>
     </section>
 </div>
+
 <script src="script.js"></script>
 </body>
 </html>
