@@ -5,13 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Application Tracker</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Chart.js library for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <div class="container">
     <h1>Job Application Tracker</h1>
 
-    <!-- DASHBOARD -->
+    <!-- ANALYTICS DASHBOARD SECTION -->
+    <section class="analytics-section">
+        <h2>📊 Analytics Dashboard</h2>
+        <div class="charts-container">
+            <div class="chart-box">
+                <h3>Status Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-box">
+                <h3>Applications Timeline</h3>
+                <div class="chart-container">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN DASHBOARD -->
     <section class="dashboard">
         <div class="card">
             <h3>Total Applications</h3>
@@ -39,31 +60,81 @@
         </div>
     </section>
 
+    <!-- COMPANY RESEARCH SECTION -->
+    <section class="company-research">
+        <h2>🏢 Company Research</h2>
+        <div class="research-container">
+            <div class="research-header">
+                <button id="addResearchBtn" class="research-btn">+ Add Company Research</button>
+                <input type="text" id="researchSearch" placeholder="Search companies..." class="research-search">
+            </div>
+            <div id="researchCards" class="research-cards">
+                <!-- Company cards will be added here by JavaScript -->
+            </div>
+        </div>
+    </section>
+
     <!-- ADD APPLICATION FORM -->
     <div id="applicationFormContainer" class="form-container" style="display:none;">
         <h2 id="formTitle">Add New Application</h2>
         <form id="applicationForm">
-            <label>Company Name</label>
-            <input type="text" id="company" required>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" id="company" required>
+                </div>
+                <div class="form-group">
+                    <label>Job Title</label>
+                    <input type="text" id="jobTitle" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="status">
+                        <option value="Applied">Applied</option>
+                        <option value="Interview">Interview</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Offer">Offer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Follow-Up Date</label>
+                    <input type="date" id="followUpDate" required>
+                </div>
+            </div>
 
-            <label>Job Title</label>
-            <input type="text" id="jobTitle" required>
-
-            <label>Status</label>
-            <select id="status">
-                <option value="Applied">Applied</option>
-                <option value="Interview">Interview</option>
-                <option value="Rejected">Rejected</option>
-                <option value="Offer">Offer</option>
-            </select>
-
-            <label>Follow-Up Date</label>
-            <input type="date" id="followUpDate" required>
+            <!-- COMPANY RESEARCH FIELDS -->
+            <div class="form-section">
+                <h3>Company Research (Optional)</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Glassdoor Rating (1-5)</label>
+                        <input type="number" id="glassdoorRating" min="1" max="5" step="0.1" placeholder="4.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Average Salary</label>
+                        <input type="text" id="averageSalary" placeholder="$120,000">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Company Notes</label>
+                    <textarea id="companyNotes" rows="3" placeholder="Culture, work-life balance, growth opportunities..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Recruiter/Contact</label>
+                    <input type="text" id="recruiterContact" placeholder="Name, email, or LinkedIn">
+                </div>
+            </div>
 
             <input type="hidden" id="editingId" value="">
+            <input type="hidden" id="researchId" value="">
 
-            <button type="submit" id="submitBtn">Add Application</button>
-            <button type="button" id="cancelBtn">Cancel</button>
+            <div class="form-buttons">
+                <button type="submit" id="submitBtn">Add Application</button>
+                <button type="button" id="cancelBtn">Cancel</button>
+            </div>
         </form>
     </div>
 
@@ -84,12 +155,12 @@
             <option value="followup">Follow-up Date</option>
         </select>
         <input type="text" id="searchInput" placeholder="Search by company or job">
-        <button id="exportBtn" class="secondary-btn">Export Data</button>
-        <button id="importBtn" class="secondary-btn">Import Data</button>
+        <button id="exportBtn" class="secondary-btn">📥 Export Data</button>
+        <button id="importBtn" class="secondary-btn">📤 Import Data</button>
         <input type="file" id="importFile" accept=".json" style="display:none">
     </div>
 
-    <!-- TABLE -->
+    <!-- APPLICATIONS TABLE -->
     <section class="applications">
         <table>
             <thead>
@@ -108,6 +179,622 @@
     </section>
 </div>
 
-<script src="script.js"></script>
+<script>
+// =====================
+// SIMPLE, WORKING VERSION
+// =====================
+
+// Initialize data
+let applications = JSON.parse(localStorage.getItem("applications")) || [];
+let companyResearch = JSON.parse(localStorage.getItem("companyResearch")) || [];
+let statusChart = null;
+let timelineChart = null;
+
+// DOM Elements
+const addApplicationBtn = document.getElementById("addApplicationBtn");
+const applicationFormContainer = document.getElementById("applicationFormContainer");
+const applicationForm = document.getElementById("applicationForm");
+const cancelBtn = document.getElementById("cancelBtn");
+const applicationsTable = document.getElementById("applicationsTable");
+
+// Wait for DOM to load
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("DOM loaded - initializing app");
+    initializeApp();
+});
+
+function initializeApp() {
+    console.log("Initializing app...");
+    
+    // Set up event listeners
+    addApplicationBtn.addEventListener("click", showAddForm);
+    cancelBtn.addEventListener("click", hideForm);
+    applicationForm.addEventListener("submit", handleFormSubmit);
+    
+    document.getElementById("addResearchBtn").addEventListener("click", showAddResearchForm);
+    document.getElementById("filterStatus").addEventListener("change", displayApplications);
+    document.getElementById("sortBy").addEventListener("change", displayApplications);
+    document.getElementById("searchInput").addEventListener("input", displayApplications);
+    document.getElementById("researchSearch").addEventListener("input", displayCompanyResearch);
+    document.getElementById("exportBtn").addEventListener("click", exportData);
+    document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
+    document.getElementById("importFile").addEventListener("change", handleImport);
+    
+    // Set default date
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById("followUpDate").value = tomorrow.toISOString().split("T")[0];
+    
+    // Display data
+    displayApplications();
+    displayCompanyResearch();
+    updateDashboard();
+    createCharts();
+    
+    console.log("App initialized with", applications.length, "applications");
+}
+
+// =====================
+// FORM FUNCTIONS
+// =====================
+
+function showAddForm() {
+    console.log("Showing add form");
+    resetForm();
+    document.getElementById("formTitle").textContent = "Add New Application";
+    document.getElementById("submitBtn").textContent = "Add Application";
+    applicationFormContainer.style.display = "block";
+}
+
+function showAddResearchForm() {
+    console.log("Showing research form");
+    resetForm();
+    document.getElementById("formTitle").textContent = "Add Company Research";
+    document.getElementById("submitBtn").textContent = "Save Research";
+    applicationFormContainer.style.display = "block";
+}
+
+function hideForm() {
+    console.log("Hiding form");
+    applicationFormContainer.style.display = "none";
+    resetForm();
+}
+
+function resetForm() {
+    document.getElementById("applicationForm").reset();
+    document.getElementById("editingId").value = "";
+    document.getElementById("researchId").value = "";
+    
+    // Reset date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById("followUpDate").value = tomorrow.toISOString().split("T")[0];
+}
+
+function handleFormSubmit(e) {
+    e.preventDefault();
+    console.log("Form submitted");
+    
+    // Get form values
+    const company = document.getElementById("company").value.trim();
+    const jobTitle = document.getElementById("jobTitle").value.trim();
+    const status = document.getElementById("status").value;
+    const followUpDate = document.getElementById("followUpDate").value;
+    const editingId = document.getElementById("editingId").value;
+    const researchId = document.getElementById("researchId").value;
+    
+    if (!company || !jobTitle) {
+        alert("Company and Job Title are required!");
+        return;
+    }
+    
+    if (editingId) {
+        // Edit existing application
+        const appId = parseInt(editingId);
+        applications = applications.map(app => 
+            app.id === appId ? {
+                ...app,
+                company: company,
+                jobTitle: jobTitle,
+                status: status,
+                followUpDate: followUpDate,
+                glassdoorRating: document.getElementById("glassdoorRating").value || null,
+                averageSalary: document.getElementById("averageSalary").value || "",
+                companyNotes: document.getElementById("companyNotes").value || "",
+                recruiterContact: document.getElementById("recruiterContact").value || ""
+            } : app
+        );
+        showNotification("Application updated!", "success");
+    } else if (researchId) {
+        // Save company research
+        const research = {
+            id: parseInt(researchId) || Date.now(),
+            company: company,
+            glassdoorRating: document.getElementById("glassdoorRating").value || null,
+            averageSalary: document.getElementById("averageSalary").value || "",
+            companyNotes: document.getElementById("companyNotes").value || "",
+            recruiterContact: document.getElementById("recruiterContact").value || "",
+            lastUpdated: new Date().toISOString()
+        };
+        
+        const existingIndex = companyResearch.findIndex(r => r.id === research.id);
+        if (existingIndex >= 0) {
+            companyResearch[existingIndex] = research;
+        } else {
+            companyResearch.push(research);
+        }
+        
+        localStorage.setItem("companyResearch", JSON.stringify(companyResearch));
+        showNotification("Company research saved!", "success");
+    } else {
+        // Add new application
+        const newApp = {
+            id: Date.now(),
+            company: company,
+            jobTitle: jobTitle,
+            status: status,
+            dateApplied: new Date().toISOString(),
+            dateAppliedDisplay: new Date().toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' }),
+            followUpDate: followUpDate,
+            glassdoorRating: document.getElementById("glassdoorRating").value || null,
+            averageSalary: document.getElementById("averageSalary").value || "",
+            companyNotes: document.getElementById("companyNotes").value || "",
+            recruiterContact: document.getElementById("recruiterContact").value || ""
+        };
+        
+        applications.push(newApp);
+        showNotification("Application added!", "success");
+        
+        // Also save as research if data provided
+        if (document.getElementById("glassdoorRating").value || 
+            document.getElementById("companyNotes").value) {
+            const researchData = {
+                id: Date.now() + 1,
+                company: company,
+                glassdoorRating: document.getElementById("glassdoorRating").value || null,
+                averageSalary: document.getElementById("averageSalary").value || "",
+                companyNotes: document.getElementById("companyNotes").value || "",
+                recruiterContact: document.getElementById("recruiterContact").value || "",
+                lastUpdated: new Date().toISOString()
+            };
+            companyResearch.push(researchData);
+            localStorage.setItem("companyResearch", JSON.stringify(companyResearch));
+        }
+    }
+    
+    // Save and update UI
+    localStorage.setItem("applications", JSON.stringify(applications));
+    displayApplications();
+    displayCompanyResearch();
+    updateDashboard();
+    updateCharts();
+    hideForm();
+}
+
+// =====================
+// DISPLAY FUNCTIONS
+// =====================
+
+function displayApplications() {
+    console.log("Displaying applications");
+    const tableBody = document.getElementById("applicationsTable");
+    const filter = document.getElementById("filterStatus").value;
+    const search = document.getElementById("searchInput").value.toLowerCase();
+    const sortBy = document.getElementById("sortBy").value;
+    
+    // Filter applications
+    let filteredApps = applications.filter(app => {
+        const matchesFilter = filter === "All" || app.status === filter;
+        const matchesSearch = app.company.toLowerCase().includes(search) || 
+                             app.jobTitle.toLowerCase().includes(search);
+        return matchesFilter && matchesSearch;
+    });
+    
+    // Sort applications
+    filteredApps.sort((a, b) => {
+        switch(sortBy) {
+            case "newest": return new Date(b.dateApplied) - new Date(a.dateApplied);
+            case "oldest": return new Date(a.dateApplied) - new Date(b.dateApplied);
+            case "company": return a.company.localeCompare(b.company);
+            case "followup": return new Date(a.followUpDate) - new Date(b.followUpDate);
+            default: return 0;
+        }
+    });
+    
+    // Clear table
+    tableBody.innerHTML = "";
+    
+    // Add rows
+    filteredApps.forEach(app => {
+        const row = document.createElement("tr");
+        
+        // Calculate days remaining
+        const today = new Date();
+        const followUp = new Date(app.followUpDate);
+        const daysDiff = Math.ceil((followUp - today) / (1000 * 60 * 60 * 24));
+        const isOverdue = daysDiff < 0 && app.status === "Applied";
+        
+        // Create star rating
+        let ratingStars = "";
+        if (app.glassdoorRating) {
+            const fullStars = Math.floor(app.glassdoorRating);
+            const halfStar = app.glassdoorRating % 1 >= 0.5;
+            ratingStars = "★".repeat(fullStars) + (halfStar ? "½" : "") + "☆".repeat(5 - Math.ceil(app.glassdoorRating));
+        }
+        
+        row.innerHTML = `
+            <td>
+                <strong>${app.company}</strong>
+                ${ratingStars ? `<div class="rating-small">${ratingStars} ${app.glassdoorRating}</div>` : ''}
+            </td>
+            <td>${app.jobTitle}</td>
+            <td><span class="status-badge status-${app.status.toLowerCase()}">${app.status}</span></td>
+            <td>${app.dateAppliedDisplay || new Date(app.dateApplied).toLocaleDateString()}</td>
+            <td>
+                ${new Date(app.followUpDate).toLocaleDateString()}
+                <br><small>${daysDiff >= 0 ? `${daysDiff} day${daysDiff !== 1 ? 's' : ''} left` : `${Math.abs(daysDiff)} day${Math.abs(daysDiff) !== 1 ? 's' : ''} ago`}</small>
+            </td>
+            <td>${isOverdue ? '<span class="alert overdue">⚠️ Overdue</span>' : '<span class="alert ok">✅ On track</span>'}</td>
+            <td>
+                <button class="action-btn" onclick="editApplication(${app.id})">✏️ Edit</button>
+                <button class="action-btn delete-btn" onclick="deleteApplication(${app.id})">🗑️ Delete</button>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Show empty state
+    if (filteredApps.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: #6b7280;">
+                    No applications found. Click "+ Add Application" to get started!
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function displayCompanyResearch() {
+    const researchCards = document.getElementById("researchCards");
+    const search = document.getElementById("researchSearch").value.toLowerCase();
+    
+    // Filter research
+    const filteredResearch = companyResearch.filter(research =>
+        research.company.toLowerCase().includes(search) ||
+        (research.companyNotes && research.companyNotes.toLowerCase().includes(search))
+    );
+    
+    // Clear cards
+    researchCards.innerHTML = "";
+    
+    // Add cards
+    filteredResearch.forEach(research => {
+        const card = document.createElement("div");
+        card.className = "research-card";
+        
+        let ratingStars = "";
+        if (research.glassdoorRating) {
+            const fullStars = Math.floor(research.glassdoorRating);
+            const halfStar = research.glassdoorRating % 1 >= 0.5;
+            ratingStars = "★".repeat(fullStars) + (halfStar ? "½" : "") + "☆".repeat(5 - Math.ceil(research.glassdoorRating));
+        }
+        
+        card.innerHTML = `
+            <h4>${research.company}</h4>
+            ${ratingStars ? `<div class="rating-stars">${ratingStars} ${research.glassdoorRating}/5</div>` : ''}
+            ${research.averageSalary ? `<p><strong>Avg Salary:</strong> ${research.averageSalary}</p>` : ''}
+            ${research.companyNotes ? `<p><strong>Notes:</strong> ${research.companyNotes.substring(0, 100)}${research.companyNotes.length > 100 ? '...' : ''}</p>` : ''}
+            ${research.recruiterContact ? `<p><strong>Contact:</strong> ${research.recruiterContact}</p>` : ''}
+            <button class="action-btn" onclick="editResearch(${research.id})" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">
+                ✏️ Edit Research
+            </button>
+        `;
+        
+        researchCards.appendChild(card);
+    });
+    
+    // Show empty state
+    if (filteredResearch.length === 0) {
+        researchCards.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #6b7280;">
+                No company research found. Click "+ Add Company Research" to get started!
+            </div>
+        `;
+    }
+}
+
+// =====================
+// CRUD OPERATIONS
+// =====================
+
+function editApplication(id) {
+    console.log("Editing application", id);
+    const app = applications.find(a => a.id === id);
+    if (!app) return;
+    
+    document.getElementById("company").value = app.company;
+    document.getElementById("jobTitle").value = app.jobTitle;
+    document.getElementById("status").value = app.status;
+    document.getElementById("followUpDate").value = app.followUpDate;
+    document.getElementById("glassdoorRating").value = app.glassdoorRating || "";
+    document.getElementById("averageSalary").value = app.averageSalary || "";
+    document.getElementById("companyNotes").value = app.companyNotes || "";
+    document.getElementById("recruiterContact").value = app.recruiterContact || "";
+    document.getElementById("editingId").value = app.id;
+    
+    document.getElementById("formTitle").textContent = "Edit Application";
+    document.getElementById("submitBtn").textContent = "Update Application";
+    applicationFormContainer.style.display = "block";
+}
+
+function editResearch(id) {
+    console.log("Editing research", id);
+    const research = companyResearch.find(r => r.id === id);
+    if (!research) return;
+    
+    document.getElementById("company").value = research.company;
+    document.getElementById("glassdoorRating").value = research.glassdoorRating || "";
+    document.getElementById("averageSalary").value = research.averageSalary || "";
+    document.getElementById("companyNotes").value = research.companyNotes || "";
+    document.getElementById("recruiterContact").value = research.recruiterContact || "";
+    document.getElementById("researchId").value = research.id;
+    
+    document.getElementById("jobTitle").value = "";
+    document.getElementById("status").value = "Applied";
+    
+    document.getElementById("formTitle").textContent = "Edit Company Research";
+    document.getElementById("submitBtn").textContent = "Update Research";
+    applicationFormContainer.style.display = "block";
+}
+
+function deleteApplication(id) {
+    if (confirm("Are you sure you want to delete this application?")) {
+        applications = applications.filter(app => app.id !== id);
+        localStorage.setItem("applications", JSON.stringify(applications));
+        displayApplications();
+        updateDashboard();
+        updateCharts();
+        showNotification("Application deleted", "info");
+    }
+}
+
+// =====================
+// ANALYTICS & CHARTS - FIXED VERSION
+// =====================
+
+function createCharts() {
+    console.log("Creating charts");
+    createStatusChart();
+    createTimelineChart();
+}
+
+function createStatusChart() {
+    const ctx = document.getElementById("statusChart").getContext("2d");
+    
+    // Calculate counts
+    const counts = {
+        Applied: 0,
+        Interview: 0,
+        Rejected: 0,
+        Offer: 0
+    };
+    
+    applications.forEach(app => {
+        if (counts[app.status] !== undefined) {
+            counts[app.status]++;
+        }
+    });
+    
+    // Destroy existing chart
+    if (statusChart) {
+        statusChart.destroy();
+    }
+    
+    // Create new chart
+    statusChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Applied', 'Interview', 'Rejected', 'Offer'],
+            datasets: [{
+                data: [counts.Applied, counts.Interview, counts.Rejected, counts.Offer],
+                backgroundColor: ['#3b82f6', '#10b981', '#ef4444', '#8b5cf6'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+}
+
+function createTimelineChart() {
+    const ctx = document.getElementById("timelineChart").getContext("2d");
+    
+    // Get applications from last 7 days
+    const today = new Date();
+    const last7Days = [];
+    
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        last7Days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    }
+    
+    // Count applications per day
+    const counts = last7Days.map(date => {
+        return applications.filter(app => {
+            const appDate = new Date(app.dateApplied).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return appDate === date;
+        }).length;
+    });
+    
+    // Destroy existing chart
+    if (timelineChart) {
+        timelineChart.destroy();
+    }
+    
+    // Create new chart
+    timelineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: last7Days,
+            datasets: [{
+                label: 'Applications',
+                data: counts,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateCharts() {
+    console.log("Updating charts");
+    createStatusChart();
+    createTimelineChart();
+}
+
+// =====================
+// DASHBOARD
+// =====================
+
+function updateDashboard() {
+    console.log("Updating dashboard");
+    
+    // Update counts
+    document.getElementById("totalCount").textContent = applications.length;
+    
+    const interviews = applications.filter(app => app.status === "Interview").length;
+    const rejected = applications.filter(app => app.status === "Rejected").length;
+    const offers = applications.filter(app => app.status === "Offer").length;
+    
+    document.getElementById("interviewCount").textContent = interviews;
+    document.getElementById("rejectedCount").textContent = rejected;
+    document.getElementById("offerCount").textContent = offers;
+    
+    // Response rate
+    const responded = interviews + rejected + offers;
+    const responseRate = applications.length > 0 ? Math.round((responded / applications.length) * 100) : 0;
+    document.getElementById("responseRate").textContent = responseRate + "%";
+    
+    // Pending follow-ups
+    const today = new Date();
+    const pending = applications.filter(app => {
+        const followUp = new Date(app.followUpDate);
+        return followUp <= today && app.status === "Applied";
+    }).length;
+    
+    document.getElementById("pendingFollowups").textContent = pending;
+}
+
+// =====================
+// IMPORT/EXPORT
+// =====================
+
+function exportData() {
+    const data = {
+        applications: applications,
+        companyResearch: companyResearch,
+        exportedAt: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'job-tracker-backup.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification("Data exported successfully!", "success");
+}
+
+function handleImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            if (confirm("Importing data will replace your current data. Continue?")) {
+                applications = data.applications || [];
+                companyResearch = data.companyResearch || [];
+                
+                localStorage.setItem("applications", JSON.stringify(applications));
+                localStorage.setItem("companyResearch", JSON.stringify(companyResearch));
+                
+                displayApplications();
+                displayCompanyResearch();
+                updateDashboard();
+                updateCharts();
+                
+                showNotification("Data imported successfully!", "success");
+            }
+        } catch (error) {
+            alert("Error importing file. Make sure it's a valid JSON file.");
+        }
+        
+        event.target.value = '';
+    };
+    
+    reader.readAsText(file);
+}
+
+// =====================
+// UTILITIES
+// =====================
+
+function showNotification(message, type) {
+    // Remove existing notification
+    const existing = document.querySelector('.notification');
+    if (existing) existing.remove();
+    
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    notification.style.backgroundColor = type === 'success' ? '#10b981' : 
+                                      type === 'error' ? '#ef4444' : '#3b82f6';
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Make functions available globally
+window.editApplication = editApplication;
+window.deleteApplication = deleteApplication;
+window.editResearch = editResearch;
+
+console.log("Script loaded successfully");
+</script>
+
 </body>
 </html>

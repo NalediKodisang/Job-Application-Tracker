@@ -18,7 +18,7 @@ body {
    CONTAINER
 ========================= */
 .container {
-    max-width: 1100px;
+    max-width: 1200px;
     margin: 40px auto;
     background: #ffffff;
     padding: 30px;
@@ -33,7 +33,58 @@ h1 {
 }
 
 /* =========================
-   DASHBOARD
+   ANALYTICS DASHBOARD
+========================= */
+.analytics-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f9fafb;
+    border-radius: 10px;
+    border: 2px solid #e5e7eb;
+}
+
+.analytics-section h2 {
+    margin-bottom: 20px;
+    color: #1f2937;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.charts-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.chart-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border: 1px solid #e5e7eb;
+    height: 320px; /* Fixed height for charts */
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-box h3 {
+    margin-bottom: 15px;
+    font-size: 16px;
+    color: #4b5563;
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.chart-container {
+    flex: 1;
+    position: relative;
+}
+
+/* =========================
+   DASHBOARD CARDS
 ========================= */
 .dashboard {
     display: grid;
@@ -42,56 +93,67 @@ h1 {
     margin-bottom: 30px;
 }
 
-.dashboard-card {
+.card {
     background: #f9fafb;
     padding: 20px;
     border-radius: 10px;
     text-align: center;
     border-left: 6px solid #2563eb;
+    transition: transform 0.2s ease;
 }
 
-.dashboard-card h3 {
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card h3 {
     font-size: 14px;
     color: #6b7280;
     margin-bottom: 8px;
 }
 
-.dashboard-card p {
+.card p {
     font-size: 26px;
     font-weight: bold;
     color: #111827;
 }
 
+.card.highlight {
+    background: #2563eb;
+    color: white;
+    border-left-color: #1e40af;
+}
+
+.card.highlight h3,
+.card.highlight p {
+    color: white;
+}
+
 /* =========================
-   FORM
+   COMPANY RESEARCH SECTION
 ========================= */
-.form-container {
-    background: #f9fafb;
+.company-research {
+    margin-bottom: 30px;
     padding: 20px;
-    margin-bottom: 25px;
+    background: #f9fafb;
     border-radius: 10px;
 }
 
-.form-container h2 {
-    margin-bottom: 15px;
+.company-research h2 {
+    margin-bottom: 20px;
+    color: #1f2937;
 }
 
-.form-container label {
-    font-weight: 600;
-    margin-bottom: 6px;
-    display: block;
+.research-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
-.form-container input,
-.form-container select {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
-}
-
-.form-container button {
+.research-btn {
+    background-color: #8b5cf6;
+    color: white;
     padding: 10px 16px;
     border-radius: 6px;
     border: none;
@@ -99,17 +161,137 @@ h1 {
     font-weight: 600;
 }
 
-.form-container button[type="submit"] {
+.research-btn:hover {
+    background-color: #7c3aed;
+}
+
+.research-search {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    width: 300px;
+}
+
+.research-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.research-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+.research-card h4 {
+    color: #2563eb;
+    margin-bottom: 10px;
+}
+
+.rating-stars {
+    color: #f59e0b;
+    font-size: 18px;
+    margin: 5px 0;
+}
+
+.rating-small {
+    color: #f59e0b;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+/* =========================
+   FORM STYLES
+========================= */
+.form-container {
+    background: #f9fafb;
+    padding: 25px;
+    margin-bottom: 30px;
+    border-radius: 10px;
+    border: 2px solid #e5e7eb;
+}
+
+.form-container h2 {
+    margin-bottom: 20px;
+    color: #1e40af;
+}
+
+.form-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f0f9ff;
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-group {
+    flex: 1;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: block;
+    color: #4b5563;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 2px solid #d1d5db;
+    font-size: 16px;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.form-buttons button {
+    padding: 12px 24px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.form-buttons button[type="submit"] {
     background-color: #2563eb;
     color: #ffffff;
 }
 
-.form-container button[type="submit"]:hover {
+.form-buttons button[type="submit"]:hover {
     background-color: #1e40af;
 }
 
 #cancelBtn {
     background-color: #e5e7eb;
+    color: #4b5563;
+}
+
+#cancelBtn:hover {
+    background-color: #d1d5db;
 }
 
 /* =========================
@@ -120,6 +302,7 @@ h1 {
     flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 25px;
+    align-items: center;
 }
 
 .controls input,
@@ -127,6 +310,7 @@ h1 {
     padding: 10px;
     border-radius: 6px;
     border: 1px solid #d1d5db;
+    min-width: 180px;
 }
 
 #addApplicationBtn {
@@ -141,6 +325,20 @@ h1 {
 
 #addApplicationBtn:hover {
     background-color: #1e40af;
+}
+
+.secondary-btn {
+    background-color: #6b7280;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.secondary-btn:hover {
+    background-color: #4b5563;
 }
 
 /* =========================
@@ -172,6 +370,10 @@ th, td {
 
 .action-btn:hover {
     text-decoration: underline;
+}
+
+.delete-btn {
+    color: #dc2626 !important;
 }
 
 /* =========================
@@ -212,81 +414,330 @@ th, td {
     font-weight: 600;
     font-size: 13px;
 }
+
 .status-badge {
-  cursor: pointer;
-  padding: 5px 10px;
-  border-radius: 12px;
-  display: inline-block;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 12px;
+    display: inline-block;
 }
 
+/* =========================
+   ALERTS & NOTIFICATIONS
+========================= */
+.alert.overdue {
+    color: #dc2626;
+    font-weight: bold;
+}
+
+.alert.ok {
+    color: #16a34a;
+    font-weight: bold;
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
 
 /* =========================
-   MOBILE
+   EMPTY STATES
+========================= */
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #6b7280;
+}
+
+.empty-state h3 {
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.empty-state p {
+    color: #9ca3af;
+}
+
+/* =========================
+   LOADING STATES
+========================= */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #2563eb;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* =========================
+   ANIMATIONS
+========================= */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* =========================
+   MOBILE RESPONSIVENESS
 ========================= */
 @media (max-width: 768px) {
     .controls {
         flex-direction: column;
+        align-items: stretch;
     }
-
+    
+    .controls input,
+    .controls select {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-box {
+        height: 280px;
+        min-height: 280px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
     table, thead, tbody, th, td, tr {
         display: block;
     }
-
+    
     thead {
         display: none;
     }
-
+    
     tr {
         margin-bottom: 15px;
         border: 1px solid #e5e7eb;
         border-radius: 8px;
         padding: 10px;
     }
-
+    
     td {
         display: flex;
         justify-content: space-between;
         padding: 8px 0;
     }
-
+    
     td::before {
         content: attr(data-label);
         font-weight: 600;
         color: #6b7280;
     }
-
+    
     .dashboard {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 15px;
-  margin-bottom: 25px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .card {
+        padding: 15px;
+    }
+    
+    .research-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .research-search {
+        width: 100%;
+    }
 }
 
-.card {
-  background: #f9fafb;
-  padding: 15px;
-  border-radius: 10px;
-  text-align: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+/* =========================
+   ADDITIONAL CHART STYLES
+========================= */
+canvas {
+    display: block;
+    max-width: 100%;
 }
 
-.card p {
-  font-size: 28px;
-  font-weight: bold;
-  margin-top: 5px;
+/* =========================
+   CHART FIXES
+========================= */
+.chart-box {
+    position: relative;
+    min-height: 300px;
 }
 
-.card.highlight {
-  background: #2563eb;
-  color: white;
-}
-.alert.overdue {
-  color: #dc2626;
-  font-weight: bold;
+.chart-container {
+    position: relative;
+    height: 250px;
+    width: 100%;
 }
 
-.alert.ok {
-  color: #16a34a;
-  font-weight: bold;
+/* =========================
+   NOTIFICATION STYLES
+========================= */
+.notification.success {
+    background-color: #10b981 !important;
 }
+
+.notification.error {
+    background-color: #ef4444 !important;
+}
+
+.notification.info {
+    background-color: #3b82f6 !important;
+}
+
+.notification.warning {
+    background-color: #f59e0b !important;
+}
+
+/* =========================
+   DAYS REMAINING STYLES
+========================= */
+.days-remaining {
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.days-remaining.overdue {
+    color: #dc2626;
+    font-weight: bold;
+}
+
+/* =========================
+   STATUS DROPDOWN (if you add inline editing)
+========================= */
+.status-dropdown {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 2px solid #3b82f6;
+    background: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.status-dropdown:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Add these to your existing style.css file */
+
+/* Fix for charts */
+.chart-container {
+    position: relative;
+    height: 250px;
+    width: 100%;
+}
+
+.chart-box {
+    min-height: 300px;
+}
+
+/* Notification styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Add these to your existing style.css file */
+
+/* Fix for charts */
+.chart-container {
+    position: relative;
+    height: 250px;
+    width: 100%;
+}
+
+.chart-box {
+    min-height: 300px;
+}
+
+/* Notification styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
