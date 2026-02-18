@@ -1,7 +1,6 @@
 # 📊 Job Application Tracker
 
 [![Live Demo](https://img.shields.io/badge/-Live%20Demo-brightgreen?style=for-the-badge&logo=github)](https://naledikodisang.github.io/Job-Application-Tracker/)
-![Job Tracker Dashboard Screenshot](link-to-your-screenshot-here)
 
 ## 🎯 **The Problem**
 Job seekers, especially graduates, often struggle to:
