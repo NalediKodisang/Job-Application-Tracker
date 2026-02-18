@@ -11,6 +11,8 @@ const applicationsTable = document.getElementById("applicationsTable");
 const filterStatus = document.getElementById("filterStatus");
 const searchInput = document.getElementById("searchInput");
 const sortBy = document.getElementById("sortBy");
+const helpBtn = document.getElementById("helpBtn");
+const shortcutsModal = document.getElementById("shortcutsModal");
 
 // ANALYTICS ELEMENTS
 const statusChartCanvas = document.getElementById("statusChart");
@@ -42,6 +44,7 @@ const rejectedCount = document.getElementById("rejectedCount");
 const offerCount = document.getElementById("offerCount");
 const responseRate = document.getElementById("responseRate");
 const pendingFollowups = document.getElementById("pendingFollowups");
+const avgRating = document.getElementById("avgRating");
 
 // IMPORT/EXPORT ELEMENTS
 const exportBtn = document.getElementById("exportBtn");
@@ -56,34 +59,53 @@ const submitBtn = document.getElementById("submitBtn");
 // 2. DATA STORAGE & STATE
 // =====================
 
-let applications = JSON.parse(localStorage.getItem("applications")) || [];
-let companyResearch = JSON.parse(localStorage.getItem("companyResearch")) || [];
+// Safe JSON parse helper
+function safeJSONParse(str, fallback) {
+    try {
+        return JSON.parse(str) || fallback;
+    } catch (e) {
+        console.error("JSON parse error:", e);
+        return fallback;
+    }
+}
+
+let applications = safeJSONParse(localStorage.getItem("applications"), []);
+let companyResearch = safeJSONParse(localStorage.getItem("companyResearch"), []);
 let isEditing = false;
 let isEditingResearch = false;
 let statusChart = null;
 let timelineChart = null;
 
 // =====================
-// 2.5 DATE FORMATTING HELPER FUNCTION
+// 2.5 DATE FORMATTING FUNCTIONS
 // =====================
 
-// Helper function to format dates as YYYY/MM/DD
-function formatDateYYYYMMDD(date) {
+// For storage (ISO format)
+function formatDateForStorage(date) {
+    return new Date(date).toISOString();
+}
+
+// For display (e.g., "Jan 15, 2024")
+function formatDateForDisplay(date) {
+    return new Date(date).toLocaleDateString("en-US", {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+// For input fields (YYYY-MM-DD)
+function formatDateForInput(date) {
+    return new Date(date).toISOString().split('T')[0];
+}
+
+// For consistent sorting (YYYY/MM/DD)
+function formatDateForSorting(date) {
     const d = new Date(date);
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}/${month}/${day}`;
-}
-
-// Helper function to format dates in a readable way (for display)
-function formatDateReadable(date) {
-    const d = new Date(date);
-    return d.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric"
-    });
 }
 
 // =====================
@@ -99,7 +121,7 @@ function initializeApp() {
     displayCompanyResearch();
     setupEventListeners();
     updateDashboard();
-    createCharts(); // Creates pie and bar charts
+    createCharts();
     
     // Focus search input for quick use
     setTimeout(() => searchInput.focus(), 100);
@@ -112,7 +134,7 @@ function setupEventListeners() {
     cancelBtn.addEventListener("click", hideForm);
     applicationForm.addEventListener("submit", handleFormSubmit);
     
-    // RESEARCH BUTTON - FIXED: Now properly shows research form
+    // RESEARCH BUTTON
     addResearchBtn.addEventListener("click", showAddResearchForm);
     
     // FILTER/SORT EVENTS
@@ -143,6 +165,18 @@ function setupEventListeners() {
     exportBtn.addEventListener("click", exportData);
     importBtn.addEventListener("click", () => importFile.click());
     importFile.addEventListener("change", handleImport);
+    
+    // HELP/SHORTCUTS
+    helpBtn.addEventListener("click", () => {
+        shortcutsModal.style.display = "flex";
+    });
+    
+    // Close modal when clicking outside
+    shortcutsModal.addEventListener("click", (e) => {
+        if (e.target === shortcutsModal) {
+            shortcutsModal.style.display = "none";
+        }
+    });
     
     // KEYBOARD SHORTCUTS
     document.addEventListener("keydown", handleKeyboardShortcuts);
@@ -193,36 +227,61 @@ function resetForm() {
     isEditing = false;
     isEditingResearch = false;
     setupDateDefault();
+    
+    // Remove any error styling
+    document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+    document.querySelectorAll('.error-message').forEach(el => el.remove());
 }
 
 // Set default follow-up date to tomorrow
 function setupDateDefault() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    followUpDate.value = tomorrow.toISOString().split("T")[0];
-    followUpDate.min = new Date().toISOString().split("T")[0];
+    followUpDate.value = formatDateForInput(tomorrow);
+    followUpDate.min = formatDateForInput(new Date());
+}
+
+// Validate form data
+function validateApplication(data) {
+    const errors = [];
+    
+    if (!data.company || data.company.length < 2) {
+        errors.push("Company name must be at least 2 characters");
+    }
+    
+    if (!data.jobTitle || data.jobTitle.length < 2) {
+        errors.push("Job title must be at least 2 characters");
+    }
+    
+    const followUp = new Date(data.followUpDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (followUp < today) {
+        errors.push("Follow-up date cannot be in the past");
+    }
+    
+    return errors;
+}
+
+// Show validation errors
+function showValidationErrors(errors) {
+    errors.forEach(error => showNotification(error, "error"));
 }
 
 // Handle form submission (both add and edit)
 function handleFormSubmit(e) {
     e.preventDefault();
     
-    // Validate follow-up date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Validate form data
+    const errors = validateApplication({
+        company: company.value.trim(),
+        jobTitle: jobTitle.value.trim(),
+        followUpDate: followUpDate.value
+    });
     
-    const selectedDate = new Date(followUpDate.value);
-    selectedDate.setHours(0, 0, 0, 0);
-    
-    if (selectedDate < today) {
-        showNotification("⚠️ Follow-up date cannot be in the past!", "error");
-        followUpDate.focus();
-        return;
-    }
-    
-    // Validate required fields
-    if (!company.value.trim() || !jobTitle.value.trim()) {
-        showNotification("⚠️ Company and Job Title are required!", "error");
+    if (errors.length > 0) {
+        showValidationErrors(errors);
         return;
     }
     
@@ -239,18 +298,18 @@ function handleFormSubmit(e) {
 }
 
 // =====================
-// 5. APPLICATION CRUD OPERATIONS - FIXED: Adding now works!
+// 5. APPLICATION CRUD OPERATIONS
 // =====================
 
-// Add new application - FIXED: This was missing!
+// Add new application
 function addNewApplication() {
     const newApp = {
         id: Date.now(),
         company: company.value.trim(),
         jobTitle: jobTitle.value.trim(),
         status: status.value,
-        dateApplied: new Date().toISOString(), // Store as ISO for easier sorting
-        dateAppliedDisplay: formatDateYYYYMMDD(new Date()), // Format as YYYY/MM/DD
+        dateApplied: formatDateForStorage(new Date()),
+        dateAppliedDisplay: formatDateForSorting(new Date()),
         followUpDate: followUpDate.value,
         glassdoorRating: glassdoorRating.value || null,
         averageSalary: averageSalary.value || "",
@@ -307,8 +366,7 @@ function saveCompanyResearch() {
         averageSalary: averageSalary.value || "",
         companyNotes: companyNotes.value || "",
         recruiterContact: recruiterContact.value || "",
-        lastUpdated: new Date().toISOString(),
-        dateAdded: new Date().toISOString()
+        lastUpdated: formatDateForStorage(new Date())
     };
     
     // Check if research already exists for this company
@@ -331,6 +389,7 @@ function saveCompanyResearch() {
     
     saveCompanyResearchToStorage();
     displayCompanyResearch();
+    updateDashboard();
 }
 
 // Save company research data from application
@@ -342,8 +401,7 @@ function saveCompanyResearchData(appData) {
         averageSalary: appData.averageSalary,
         companyNotes: appData.companyNotes,
         recruiterContact: appData.recruiterContact,
-        lastUpdated: new Date().toISOString(),
-        dateAdded: new Date().toISOString()
+        lastUpdated: formatDateForStorage(new Date())
     };
     
     // Check if research already exists for this company
@@ -426,28 +484,34 @@ function createApplicationRow(app) {
     const row = document.createElement("tr");
     
     // Create star rating display
-    const ratingStars = app.glassdoorRating ? 
-        "★".repeat(Math.floor(app.glassdoorRating)) +
-        (app.glassdoorRating % 1 >= 0.5 ? "½" : "") +
-        "☆".repeat(5 - Math.ceil(app.glassdoorRating))
-        : "";
+    let ratingStars = "";
+    if (app.glassdoorRating) {
+        const fullStars = Math.floor(app.glassdoorRating);
+        const hasHalfStar = app.glassdoorRating % 1 >= 0.5;
+        const emptyStars = 5 - Math.ceil(app.glassdoorRating);
+        
+        ratingStars = "★".repeat(fullStars) +
+                     (hasHalfStar ? "½" : "") +
+                     "☆".repeat(emptyStars);
+    }
     
     row.innerHTML = `
         <td data-label="Company">
-            <strong>${app.company}</strong>
+            <strong>${escapeHtml(app.company)}</strong>
             ${app.glassdoorRating ? `<div class="rating-small">${ratingStars} ${app.glassdoorRating}</div>` : ""}
         </td>
-        <td data-label="Job Title">${app.jobTitle}</td>
+        <td data-label="Job Title">${escapeHtml(app.jobTitle)}</td>
         <td data-label="Status">
             <span class="status-badge status-${app.status.toLowerCase()}">
                 ${app.status}
             </span>
         </td>
-        <td data-label="Date Applied">${app.dateAppliedDisplay || formatDateYYYYMMDD(app.dateApplied)}</td>
+        <td data-label="Date Applied">${formatDateForDisplay(app.dateApplied)}</td>
         <td data-label="Follow-Up">
-            ${formatDateYYYYMMDD(app.followUpDate)}
-            ${daysUntil >= 0 ? `<br><small class="days-remaining">(${daysUntil} day${daysUntil !== 1 ? "s" : ""} ${daysUntil === 0 ? 'today' : 'left'})</small>` : 
-              `<br><small class="days-remaining overdue">(${Math.abs(daysUntil)} day${Math.abs(daysUntil) !== 1 ? "s" : ""} overdue)</small>`}
+            ${formatDateForDisplay(app.followUpDate)}
+            ${daysUntil >= 0 ? 
+                `<br><small class="days-remaining">(${daysUntil} day${daysUntil !== 1 ? "s" : ""} ${daysUntil === 0 ? 'today' : 'left'})</small>` : 
+                `<br><small class="days-remaining overdue">(${Math.abs(daysUntil)} day${Math.abs(daysUntil) !== 1 ? "s" : ""} overdue)</small>`}
         </td>
         <td data-label="Alert">
             ${isOverdue ? 
@@ -455,17 +519,26 @@ function createApplicationRow(app) {
                 `<span class="alert ok">✅ On track</span>`}
         </td>
         <td data-label="Actions">
-            <button class="action-btn" onclick="editApplication(${app.id})">
+            <button class="action-btn" onclick="editApplication(${app.id})" title="Edit">
                 ✏️ Edit
             </button>
-            <button class="action-btn delete-btn" onclick="deleteApplication(${app.id})">
+            <button class="action-btn delete-btn" onclick="deleteApplication(${app.id})" title="Delete">
                 🗑️ Delete
             </button>
-            ${app.companyNotes ? `<button class="action-btn" onclick="viewCompanyResearch('${app.company}')" title="View Research">📚</button>` : ""}
+            ${app.companyNotes ? 
+                `<button class="action-btn" onclick="viewCompanyResearch('${escapeHtml(app.company)}')" title="View Research">📚</button>` : 
+                ""}
         </td>
     `;
     
     return row;
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Show empty state message
@@ -495,11 +568,16 @@ function sortApplications(apps) {
     
     return [...apps].sort((a, b) => {
         switch(sortValue) {
-            case "newest": return new Date(b.dateApplied) - new Date(a.dateApplied);
-            case "oldest": return new Date(a.dateApplied) - new Date(b.dateApplied);
-            case "company": return a.company.localeCompare(b.company);
-            case "followup": return new Date(a.followUpDate) - new Date(b.followUpDate);
-            default: return 0;
+            case "newest": 
+                return new Date(b.dateApplied) - new Date(a.dateApplied);
+            case "oldest": 
+                return new Date(a.dateApplied) - new Date(b.dateApplied);
+            case "company": 
+                return a.company.localeCompare(b.company);
+            case "followup": 
+                return new Date(a.followUpDate) - new Date(b.followUpDate);
+            default: 
+                return 0;
         }
     });
 }
@@ -544,6 +622,19 @@ function deleteApplication(id) {
     }
 }
 
+// Delete company research
+function deleteResearch(companyName) {
+    if (confirm(`Delete research for ${companyName}?`)) {
+        companyResearch = companyResearch.filter(r => 
+            r.company.toLowerCase() !== companyName.toLowerCase()
+        );
+        saveCompanyResearchToStorage();
+        displayCompanyResearch();
+        updateDashboard();
+        showNotification("📚 Research deleted", "info");
+    }
+}
+
 // View company research
 function viewCompanyResearch(companyName) {
     const research = companyResearch.find(r => 
@@ -568,8 +659,13 @@ function viewCompanyResearch(companyName) {
     }
 }
 
+// Edit company research
+function editResearch(companyName) {
+    viewCompanyResearch(companyName);
+}
+
 // =====================
-// 8. ANALYTICS & CHARTS - FIXED: Now working properly!
+// 8. ANALYTICS & CHARTS
 // =====================
 
 // Create both charts
@@ -580,9 +676,10 @@ function createCharts() {
 
 // Create status distribution chart (pie chart)
 function createStatusChart() {
-    // Destroy existing chart if it exists
+    // Properly destroy existing chart
     if (statusChart) {
         statusChart.destroy();
+        statusChart = null;
     }
     
     const ctx = statusChartCanvas.getContext("2d");
@@ -618,16 +715,16 @@ function createStatusChart() {
         return;
     }
     
-    // Ensure we have a canvas element
+    // Restore canvas if placeholder was shown
     if (statusChartCanvas.parentElement.innerHTML.includes('<div')) {
-        statusChartCanvas.parentElement.innerHTML = '<canvas id="statusChart" width="400" height="300"></canvas>';
+        statusChartCanvas.parentElement.innerHTML = '<canvas id="statusChart"></canvas>';
     }
     
     const statusColors = {
-        Applied: '#3b82f6', // Blue
-        Interview: '#10b981', // Green
-        Rejected: '#ef4444', // Red
-        Offer: '#8b5cf6' // Purple
+        Applied: '#3b82f6',
+        Interview: '#10b981',
+        Rejected: '#ef4444',
+        Offer: '#8b5cf6'
     };
     
     statusChart = new Chart(ctx, {
@@ -672,11 +769,12 @@ function createStatusChart() {
     });
 }
 
-// Create timeline chart (applications over time) - FIXED: Now working!
+// Create timeline chart (applications over time)
 function createTimelineChart() {
-    // Destroy existing chart if it exists
+    // Properly destroy existing chart
     if (timelineChart) {
         timelineChart.destroy();
+        timelineChart = null;
     }
     
     const ctx = timelineChartCanvas.getContext("2d");
@@ -689,14 +787,14 @@ function createTimelineChart() {
     for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
-        const dateKey = formatDateYYYYMMDD(date); // Use YYYY/MM/DD format
+        const dateKey = formatDateForSorting(date);
         dateMap[dateKey] = 0;
     }
     
     // Count applications for each date
     applications.forEach(app => {
         const appDate = new Date(app.dateApplied);
-        const dateKey = formatDateYYYYMMDD(appDate);
+        const dateKey = formatDateForSorting(appDate);
         
         // Only count if within last 7 days
         const daysDiff = Math.floor((today - appDate) / (1000 * 60 * 60 * 24));
@@ -727,15 +825,18 @@ function createTimelineChart() {
         return;
     }
     
-    // Ensure we have a canvas element
+    // Restore canvas if placeholder was shown
     if (timelineChartCanvas.parentElement.innerHTML.includes('<div')) {
-        timelineChartCanvas.parentElement.innerHTML = '<canvas id="timelineChart" width="400" height="300"></canvas>';
+        timelineChartCanvas.parentElement.innerHTML = '<canvas id="timelineChart"></canvas>';
     }
     
     timelineChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: dates,
+            labels: dates.map(date => {
+                const [year, month, day] = date.split('/');
+                return `${month}/${day}`;
+            }),
             datasets: [{
                 label: 'Applications',
                 data: counts,
@@ -839,6 +940,15 @@ function updateDashboard() {
     }).length;
     
     pendingFollowups.textContent = pending;
+    
+    // Calculate average Glassdoor rating
+    const ratings = companyResearch
+        .filter(r => r.glassdoorRating)
+        .map(r => parseFloat(r.glassdoorRating));
+    
+    const avgRatingValue = ratings.length > 0 ? 
+        (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : 0;
+    avgRating.textContent = avgRatingValue;
 }
 
 // =====================
@@ -878,7 +988,7 @@ function displayCompanyResearch() {
         const card = document.createElement("div");
         card.className = "research-card";
         
-        const lastUpdated = formatDateYYYYMMDD(research.lastUpdated); // Use YYYY/MM/DD format
+        const lastUpdated = formatDateForDisplay(research.lastUpdated);
         
         // Create star rating display
         let ratingStars = "";
@@ -894,10 +1004,11 @@ function displayCompanyResearch() {
         
         card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: start;">
-                <h4>${research.company}</h4>
-                <button class="action-btn" onclick="editResearch('${research.company}')" style="padding: 4px 8px; font-size: 12px;">
-                    ✏️ Edit
-                </button>
+                <h4>${escapeHtml(research.company)}</h4>
+                <div>
+                    <button class="action-btn" onclick="editResearch('${escapeHtml(research.company)}')" title="Edit Research">✏️</button>
+                    <button class="action-btn delete-btn" onclick="deleteResearch('${escapeHtml(research.company)}')" title="Delete Research">🗑️</button>
+                </div>
             </div>
             
             ${ratingStars ? `
@@ -907,15 +1018,15 @@ function displayCompanyResearch() {
             ` : ''}
             
             ${research.averageSalary ? `
-                <p><strong>Avg Salary:</strong> ${research.averageSalary}</p>
+                <p><strong>Avg Salary:</strong> ${escapeHtml(research.averageSalary)}</p>
             ` : ''}
             
             ${research.companyNotes ? `
-                <p><strong>Notes:</strong> ${research.companyNotes.substring(0, 100)}${research.companyNotes.length > 100 ? '...' : ''}</p>
+                <p><strong>Notes:</strong> ${escapeHtml(research.companyNotes.substring(0, 100))}${research.companyNotes.length > 100 ? '...' : ''}</p>
             ` : ''}
             
             ${research.recruiterContact ? `
-                <p><strong>Contact:</strong> ${research.recruiterContact}</p>
+                <p><strong>Contact:</strong> ${escapeHtml(research.recruiterContact)}</p>
             ` : ''}
             
             <div style="margin-top: 10px; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 8px;">
@@ -927,38 +1038,17 @@ function displayCompanyResearch() {
     });
 }
 
-// Edit company research
-function editResearch(companyName) {
-    const research = companyResearch.find(r => 
-        r.company.toLowerCase() === companyName.toLowerCase()
-    );
-    
-    if (research) {
-        company.value = research.company;
-        glassdoorRating.value = research.glassdoorRating || "";
-        averageSalary.value = research.averageSalary || "";
-        companyNotes.value = research.companyNotes || "";
-        recruiterContact.value = research.recruiterContact || "";
-        
-        researchId.value = research.id;
-        isEditingResearch = true;
-        isEditing = false;
-        formTitle.textContent = "Edit Company Research";
-        submitBtn.textContent = "Update Research";
-        applicationFormContainer.style.display = "block";
-        company.focus();
-    }
-}
-
 // =====================
 // 11. IMPORT/EXPORT FUNCTIONS
 // =====================
 
-function exportData() {
+async function exportData() {
+    showLoading();
+    
     const data = {
         applications: applications,
         companyResearch: companyResearch,
-        exportedAt: formatDateYYYYMMDD(new Date()), // Use YYYY/MM/DD format
+        exportedAt: formatDateForStorage(new Date()),
         version: "1.0"
     };
     
@@ -966,18 +1056,21 @@ function exportData() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `job-tracker-backup-${formatDateYYYYMMDD(new Date())}.json`;
+    a.download = `job-tracker-backup-${formatDateForSorting(new Date())}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
+    hideLoading();
     showNotification("✅ Data exported successfully!", "success");
 }
 
-function handleImport(event) {
+async function handleImport(event) {
     const file = event.target.files[0];
     if (!file) return;
+    
+    showLoading();
     
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -1001,10 +1094,17 @@ function handleImport(event) {
         } catch (error) {
             showNotification("❌ Error importing data. Invalid file format.", "error");
             console.error("Import error:", error);
+        } finally {
+            hideLoading();
         }
         
         // Reset file input
         event.target.value = '';
+    };
+    
+    reader.onerror = function() {
+        hideLoading();
+        showNotification("❌ Error reading file", "error");
     };
     
     reader.readAsText(file);
@@ -1014,6 +1114,14 @@ function handleImport(event) {
 // 12. UI UTILITIES
 // =====================
 
+function showLoading() {
+    document.body.classList.add('loading');
+}
+
+function hideLoading() {
+    document.body.classList.remove('loading');
+}
+
 function showNotification(message, type) {
     // Remove existing notifications
     const existingNotif = document.querySelector('.notification');
@@ -1022,9 +1130,15 @@ function showNotification(message, type) {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.textContent = message;
-    notification.style.backgroundColor = type === 'error' ? '#ef4444' : 
-                                      type === 'success' ? '#10b981' : 
-                                      type === 'info' ? '#3b82f6' : '#6b7280';
+    
+    // Set color based on type
+    const colors = {
+        error: '#ef4444',
+        success: '#10b981',
+        info: '#3b82f6',
+        warning: '#f59e0b'
+    };
+    notification.style.backgroundColor = colors[type] || '#6b7280';
     
     document.body.appendChild(notification);
     
@@ -1048,14 +1162,30 @@ function handleKeyboardShortcuts(e) {
         searchInput.select();
     }
     
-    // Escape: Hide form
-    if (e.key === 'Escape' && applicationFormContainer.style.display === 'block') {
-        hideForm();
+    // ? : Show shortcuts
+    if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        shortcutsModal.style.display = "flex";
+    }
+    
+    // Escape: Hide form or modal
+    if (e.key === 'Escape') {
+        if (applicationFormContainer.style.display === 'block') {
+            hideForm();
+        }
+        if (shortcutsModal.style.display === 'flex') {
+            shortcutsModal.style.display = 'none';
+        }
     }
 }
 
-// Make functions globally available for inline event handlers
+// =====================
+// 13. MAKE FUNCTIONS GLOBAL
+// =====================
+
 window.editApplication = editApplication;
 window.deleteApplication = deleteApplication;
 window.viewCompanyResearch = viewCompanyResearch;
 window.editResearch = editResearch;
+window.deleteResearch = deleteResearch;
+window.showAddForm = showAddForm;
